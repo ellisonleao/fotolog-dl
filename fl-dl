@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+So, fotolog.com is coming to an end... and we want our photos..
+Script usage
+
+First:
+    - pip install -r requirements.txt
+Then:
+    - ./fl-dl YOUR_FOTOLOG_USERNAME SAVE_IMAGE_PATH
+    - Enjoy.
+"""
+import os
+import time
+import uuid
+
+import grequests
+import click
+from robobrowser import RoboBrowser
+
+
+def save_image(r, path):
+    if r.status_code == 200:
+        id_ = str(uuid.uuid4()).replace('-', '')
+        filename = os.path.join(path, 'image_{}.jpg'.format(id_ ))
+        with open(filename, 'wb') as im:
+            for chunk in r.iter_content(1024):
+                im.write(chunk)
+
+
+@click.command()
+@click.argument('username')
+@click.argument('path', default='.')
+def main(username, path):
+    t0 = time.time()
+    fotolog_url = 'http://www.fotolog.com/{}/mosaic'.format(username)
+    per_page = 30
+
+    browser = RoboBrowser(history=True, parser='html.parser')
+    browser.open(fotolog_url)
+
+    # get last page
+    pagination_links = browser.find(id='pagination').children
+
+    for item in pagination_links:
+        pass
+
+    last_page = int(item.attrs['href'].split('/')[-1])
+    links = browser.find_all('a', class_='wall_img_container')
+    image_urls = []
+
+    page = 1
+    while links:
+        print 'Fetching page {}...'.format(page)
+        for link in links:
+            browser.follow_link(link)
+            try:
+                img = browser.find('a', class_='wall_img_container_big').next_element
+            except:
+                print 'img not found, skipping'
+                continue
+
+            img_url = img.attrs['src']
+            print 'Grabbing {}'.format(img_url)
+            image_urls.append(img_url)
+
+            browser.back()
+        page += 1
+
+        if page * per_page >= last_page:
+            break
+
+        new_page_url = '{}/{}'.format(fotolog_url, per_page * page)
+        print 'Opening {}'.format(new_page_url)
+        browser.open(new_page_url)
+        links = browser.find_all('a', class_='wall_img_container')
+
+    print 'Saving images..'
+    rs = (grequests.get(u) for u in image_urls)
+    responses = grequests.map(rs, stream=True)
+    [save_image(r, path) for r in responses]
+    t1 = time.time()
+    print 'Execution time: {:.2f}'.format(t1 - t0)
+
+if __name__ == "__main__":
+    main()
