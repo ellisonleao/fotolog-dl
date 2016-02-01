@@ -13,20 +13,32 @@ Then:
 import os
 import time
 import uuid
+from zipfile import ZipFile
 
-import grequests
 import click
+import requests
 from robobrowser import RoboBrowser
 
+def color_text(message, color):
+    COLORS = dict(
+        green='\033[92m',
+        yellow='\033[93m',
+        red='\033[91m',
+    )
+    return u'{}{}\033[0m'.format(COLORS[color], message)
 
-def save_image(r, path):
-    if r.status_code == 200:
-        id_ = str(uuid.uuid4()).replace('-', '')
-        filename = os.path.join(path, 'image_{}.jpg'.format(id_ ))
-        with open(filename, 'wb') as im:
-            for chunk in r.iter_content(1024):
-                im.write(chunk)
-
+def save_image(image_path, save_path):
+    id_ = str(uuid.uuid4()).replace('-', '')
+    filename = os.path.join(save_path, 'image_{}.jpg'.format(id_ ))
+    try:
+        r = requests.get(image_path, stream=True)
+        if r.status_code == 200:
+            with open(filename, 'wb') as im:
+                for chunk in r.iter_content(1024):
+                    im.write(chunk)
+    except:
+        return False
+    return filename
 
 @click.command()
 @click.argument('username')
@@ -35,6 +47,10 @@ def main(username, path):
     t0 = time.time()
     fotolog_url = 'http://www.fotolog.com/{}/mosaic'.format(username)
     per_page = 30
+    errors = 0
+    saved = 0
+    zip_file = os.path.join(path, '{}_photos.zip'.format(username))
+    saved_images = []
 
     browser = RoboBrowser(history=True, parser='html.parser')
     browser.open(fotolog_url)
@@ -47,11 +63,10 @@ def main(username, path):
 
     last_page = int(item.attrs['href'].split('/')[-1])
     links = browser.find_all('a', class_='wall_img_container')
-    image_urls = []
 
     page = 1
     while links:
-        print 'Fetching page {}...'.format(page)
+        print color_text('Fetching page {}...'.format(page), 'yellow')
         for link in links:
             browser.follow_link(link)
             try:
@@ -61,8 +76,14 @@ def main(username, path):
                 continue
 
             img_url = img.attrs['src']
-            print 'Grabbing {}'.format(img_url)
-            image_urls.append(img_url)
+
+            print color_text('Grabbing {}'.format(img_url), 'green')
+            new_image = save_image(img_url, path)
+            if new_image:
+                saved += 1
+                saved_images.append(new_image)
+            else:
+                errors += 1
 
             browser.back()
         page += 1
@@ -75,12 +96,20 @@ def main(username, path):
         browser.open(new_page_url)
         links = browser.find_all('a', class_='wall_img_container')
 
-    print 'Saving images..'
-    rs = (grequests.get(u) for u in image_urls)
-    responses = grequests.map(rs, stream=True)
-    [save_image(r, path) for r in responses]
+    # zip all the things
+    with ZipFile(zip_file, 'w') as z:
+        for s in saved_images:
+            z.write(s)
+            os.remove(os.path.join(path, s))
+
     t1 = time.time()
-    print 'Execution time: {:.2f}'.format(t1 - t0)
+    print color_text("""
+Images saved..
+{} Images saved.
+{} Images couldn't be downloaded.
+
+Execution time: {:.2f} seconds
+""".format(saved, errors, (t1 - t0)), 'green')
 
 if __name__ == "__main__":
     main()

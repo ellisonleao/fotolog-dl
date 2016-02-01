@@ -25,7 +25,3 @@ pip install -r requirements.txt
 	./fl-dl YOUR_FOTOLOG_USERNAME SAVE_IMAGE_PATH
 
 ## Enjoy!
-
-Playing around with:
-	- [Grequests](https://github.com/kennethreitz/grequests/) :heart:
-	- [Robobrowser](https://github.com/jmcarp/robobrowser)
