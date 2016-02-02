@@ -45,7 +45,7 @@ def save_image(image_path, save_path):
 @click.argument('path', default='.')
 def main(username, path):
     t0 = time.time()
-    fotolog_url = 'http://www.fotolog.com/{}/mosaic'.format(username)
+    fotolog_url = 'http://www.fotolog.com/{}/mosaic/'.format(username)
     per_page = 30
     errors = 0
     saved = 0
@@ -61,12 +61,17 @@ def main(username, path):
     for item in pagination_links:
         pass
 
-    last_page = int(item.attrs['href'].split('/')[-1])
     links = browser.find_all('a', class_='wall_img_container')
 
     page = 1
     while links:
         print color_text('Fetching page {}...'.format(page), 'yellow')
+
+        # if the page > last page we get redirected back to the original one
+        # so we need to stop at this point
+        if browser.response.url == fotolog_url and page > 1:
+            break
+
         for link in links:
             browser.follow_link(link)
             try:
@@ -88,10 +93,7 @@ def main(username, path):
             browser.back()
         page += 1
 
-        if page * per_page >= last_page:
-            break
-
-        new_page_url = '{}/{}'.format(fotolog_url, per_page * page)
+        new_page_url = '{}{}'.format(fotolog_url, per_page * page)
         print 'Opening {}'.format(new_page_url)
         browser.open(new_page_url)
         links = browser.find_all('a', class_='wall_img_container')
