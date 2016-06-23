@@ -19,8 +19,6 @@ import click
 import grequests
 from robobrowser import RoboBrowser
 
-def save_images(responses, save_path, username):
-    return saved, errors
 
 @click.command()
 @click.argument('username')
@@ -57,7 +55,7 @@ def main(username, path):
             try:
                 img = browser.find('a', class_='wall_img_container_big').next_element
             except:
-                print 'img not found, skipping'
+                click.echo('img not found, skipping')
                 continue
 
             img_url = img.attrs['src']
