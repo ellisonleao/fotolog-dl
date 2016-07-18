@@ -1,12 +1,8 @@
 Fotolog Downloader
 ==================
 
+Easily grab your fotolog.com pics
 
-So, fotolog.com is coming to an end... and we want our photos..
-
-We need to keep our history alive! So i've built a small script to save our precious photos.
-
-Please note that this script will NOT work after the site goes down (Probably after February 20th 2016)
 
 # Script usage
 
