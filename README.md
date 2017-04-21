@@ -1,6 +1,8 @@
 Fotolog Pics Downloader
 =======================
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/ellisonleao/fotolog-dl)](https://goreportcard.com/report/github.com/ellisonleao/fotolog-dl)
+
 Easily grab your [fotolog.com](http://fotolog.com) pics
 
 # Installing
