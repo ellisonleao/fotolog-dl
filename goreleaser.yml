@@ -1,0 +1,7 @@
+brew:
+  github:
+    owner: ellisonleao
+    name: homebrew-tap
+  folder: Formula
+  dependencies:
+    - git
